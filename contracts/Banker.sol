@@ -3,13 +3,13 @@
 // P1 - P3: OK
 pragma solidity 0.6.12;
 
-import "./deps/uniswapv2/IUniswapV2Factory.sol";
-import "./deps/uniswapv2/IUniswapV2Pair.sol";
-import "./deps/uniswapv2/IUniswapV2ERC20.sol";
+import "./interfaces/uniswapv2/IUniswapV2Factory.sol";
+import "./interfaces/uniswapv2/IUniswapV2Pair.sol";
+import "./interfaces/uniswapv2/IUniswapV2ERC20.sol";
 
-import "./deps/SafeMath.sol";
-import "./deps/SafeERC20.sol";
-import "./deps/Ownable.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
 // This contract handles "serving up" rewards for xGovernanceToken holders 
 // by trading tokens collected from fees for GovernanceToken.
