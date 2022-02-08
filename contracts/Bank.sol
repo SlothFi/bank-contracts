@@ -2,11 +2,11 @@
 
 pragma solidity ^0.6.12;
 
-import "./deps/IERC20.sol";
-import "./deps/ERC20.sol";
-import "./deps/SafeMath.sol";
-import "./deps/SafeERC20.sol";
-import "./deps/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 // The Bank is full of rewards and SLOTH.
 // The longer you stay, the more SLOTH you end up with when you leave.
@@ -15,12 +15,6 @@ contract Bank is ERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     IERC20 public govToken;
-
-    mapping (address => uint256) public timeLocks;
-
-    uint256 EARLY_WITHDRAWL_FEE = 100; // To determine the fee we do x / 10000 so for 1% it's 100/10000
-    uint256 WITHDRAWL_FEE_MAX = 10000;
-    uint256 FEE_TIMER = 10800; //3 hours
 
     // Define the Bank token contract
     constructor(
@@ -48,9 +42,6 @@ contract Bank is ERC20, ReentrancyGuard {
         }
         // Lock the GovernanceToken in the contract
         govToken.safeTransferFrom(msg.sender, address(this), _amount);
-
-        //Write down what time the user can leave with no fee 
-        timeLocks[msg.sender] = block.timestamp + FEE_TIMER;
     }
 
     // Leave the bar. Claim back your SLOTH.
@@ -65,11 +56,6 @@ contract Bank is ERC20, ReentrancyGuard {
         // Calculates the amount of GovernanceToken the xGovernanceToken is worth
         uint256 bal =_share.mul(govBalance).div(totalShares);
 
-        if(timeLocks[msg.sender] <= block.timestamp) {
-            //User takes a withdrawl fee
-            uint256 withdrawlFee = EARLY_WITHDRAWL_FEE.div(WITHDRAWL_FEE_MAX);
-            bal = bal.sub(withdrawlFee);
-        }
         _burn(msg.sender, _share);
         govToken.safeTransfer(msg.sender, bal);
     }
