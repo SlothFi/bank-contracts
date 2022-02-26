@@ -1,3 +1,3 @@
-# VenomProtocol
+# SlothFi
 
 TODO: docs

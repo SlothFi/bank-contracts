@@ -1,7 +1,7 @@
 import chai, { expect } from 'chai'
 import { Contract, utils } from 'ethers'
 import { solidity, MockProvider, deployContract } from 'ethereum-waffle'
-import { deployMasterBreeder, deployGovernanceToken } from './shared/deploy'
+import { deployMasterBanker, deployGovernanceToken } from './shared/deploy'
 import { expandTo18Decimals, encodeParameters } from './shared/utilities'
 import { latest, duration, increase } from './shared/time'
 
@@ -26,7 +26,7 @@ describe("Timelock", () => {
 
   beforeEach(async () => {
     govToken = await deployGovernanceToken(alice)
-    chef = await deployMasterBreeder(wallets, govToken, expandTo18Decimals(rewardsPerBlock), rewardsStartAtBlock, 1000)
+    chef = await deployMasterBanker(wallets, govToken, expandTo18Decimals(rewardsPerBlock), rewardsStartAtBlock, 1000)
     timelock = await deployContract(alice, Timelock, [bob.address, "172800"]) // 2 day / 48 hour timelock
   })
 

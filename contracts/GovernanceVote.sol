@@ -4,9 +4,9 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@venomswap/core/contracts/interfaces/IUniswapV2Pair.sol";
+import "@slothfi/bank-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IGovernanceToken.sol";
-import "./interfaces/IMasterBreeder.sol";
+import "./interfaces/IMasterBanker.sol";
 
 contract GovernanceVote {
   using SafeMath for uint256;
@@ -20,16 +20,16 @@ contract GovernanceVote {
   uint8 private _govTokenReservePosition;
 
   IGovernanceToken public govToken;
-  IMasterBreeder public masterBreeder;
+  IMasterBanker public masterBanker;
   IUniswapV2Pair public lpPair;
-  IERC20 public pit;
+  IERC20 public bank;
 
   constructor(
     string memory name_,
     string memory symbol_,
     IGovernanceToken govToken_,
-    IERC20 pit_,
-    IMasterBreeder masterBreeder_,
+    IERC20 bank_,
+    IMasterBanker masterBanker_,
     uint8 poolId_,
     IUniswapV2Pair lpPair_,
     uint8 govTokenReservePosition_,
@@ -40,8 +40,8 @@ contract GovernanceVote {
     _symbol = symbol_;
     _decimals = 18;
     govToken = govToken_;
-    pit = pit_;
-    masterBreeder = masterBreeder_;
+    bank = bank_;
+    masterBanker = masterBanker_;
     _poolId = poolId_;
     lpPair = lpPair_;
     _govTokenReservePosition = govTokenReservePosition_;
@@ -79,22 +79,22 @@ contract GovernanceVote {
     return _govTokenReserve;
   }
 
-  function pitRatio() public view returns (uint256) {
-    uint256 pitTotalSupply = pit.totalSupply();
-    uint256 govTokenPitBalance = govToken.balanceOf(address(pit));
-    if (pitTotalSupply > 0 && govTokenPitBalance > 0) {
-      return govTokenPitBalance.mul(10 ** 18).div(pitTotalSupply);
+  function bankRatio() public view returns (uint256) {
+    uint256 bankTotalSupply = bank.totalSupply();
+    uint256 govTokenBankBalance = govToken.balanceOf(address(bank));
+    if (bankTotalSupply > 0 && govTokenBankBalance > 0) {
+      return govTokenBankBalance.mul(10 ** 18).div(bankTotalSupply);
     }
     return uint256(1).mul(10 ** 18);
   }
 
-  function adjustedPitValue(uint256 value) public view returns (uint256) {
-    return value.mul(pitRatio()).div(10 ** 18);
+  function adjustedBankValue(uint256 value) public view returns (uint256) {
+    return value.mul(bankRatio()).div(10 ** 18);
   }
 
   function totalSupply() public view returns (uint256) {
     uint256 govTokenCurrentReserve = govTokenReserve();
-    uint256 pitTotalSupply = pit.totalSupply();
+    uint256 bankTotalSupply = bank.totalSupply();
     uint256 unlockedTotal = govToken.unlockedSupply();
     uint256 lockedTotal = govToken.totalLock();
 
@@ -105,10 +105,10 @@ contract GovernanceVote {
       calculatedTotalSupply = govTokenCurrentReserve.mul(_lpMultiplier);
     }
 
-    // pitTotalSupply x _singleStakingMultiplier (e.g. 2) tokens are added to the total supply
-    if (pitTotalSupply > 0) {
+    // bankTotalSupply x _singleStakingMultiplier (e.g. 2) tokens are added to the total supply
+    if (bankTotalSupply > 0) {
       calculatedTotalSupply = calculatedTotalSupply.add(
-        adjustedPitValue(pitTotalSupply).mul(_singleStakingMultiplier)
+        adjustedBankValue(bankTotalSupply).mul(_singleStakingMultiplier)
       );
     }
 
@@ -130,7 +130,7 @@ contract GovernanceVote {
 
     uint256 govTokenCurrentReserve = govTokenReserve();
 
-    (uint256 userLpTokenAmountInPool, ) = masterBreeder.userInfo(_poolId, owner);
+    (uint256 userLpTokenAmountInPool, ) = masterBanker.userInfo(_poolId, owner);
     uint256 pairTotal = lpPair.totalSupply();
     
     // Calculate lp share voting power
@@ -139,10 +139,10 @@ contract GovernanceVote {
     votingPower = pairUnderlying.mul(_lpMultiplier);
 
     // Add single-staking voting power
-    uint256 pitBalance = pit.balanceOf(owner);
-    if (pitBalance > 0) {
+    uint256 bankBalance = bank.balanceOf(owner);
+    if (bankBalance > 0) {
       votingPower = votingPower.add(
-        adjustedPitValue(pitBalance).mul(_singleStakingMultiplier)
+        adjustedBankValue(bankBalance).mul(_singleStakingMultiplier)
       );
     }
     

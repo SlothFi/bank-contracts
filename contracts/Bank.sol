@@ -2,15 +2,15 @@
 
 pragma solidity ^0.6.12;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-// The Bank is full of rewards and SLOTH.
-// The longer you stay, the more SLOTH you end up with when you leave.
-// This contract handles swapping to and from xSLOTH <> SLOTH
+// The Bank is full of rewards and MON.
+// The longer you stay, the more MON you end up with when you leave.
+// This contract handles swapping to and from xMON <> MON
 contract Bank is ERC20, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -44,7 +44,7 @@ contract Bank is ERC20, ReentrancyGuard {
         govToken.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
-    // Leave the bar. Claim back your SLOTH.
+    // Leave the bar. Claim back your MON.
     // Unclocks the staked + gained GovernanceToken and burns xGovernanceToken
     function leave(uint256 _share) public nonReentrant {
         // Gets the amount of xGovernanceToken in existence

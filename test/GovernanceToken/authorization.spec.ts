@@ -30,7 +30,7 @@ describe('GovernanceToken::Authorization', () => {
 
   let token: Contract
   beforeEach(async () => {
-    token = await deployContract(alice, GovernanceToken, ["Sloth", "SLOTH", TOTAL_CAP, MANUAL_MINT_LIMIT, LOCK_FROM_BLOCK, LOCK_TO_BLOCK])
+    token = await deployContract(alice, GovernanceToken, ["Mon", "MON", TOTAL_CAP, MANUAL_MINT_LIMIT, LOCK_FROM_BLOCK, LOCK_TO_BLOCK])
     await token.mint(alice.address, TOTAL_CIRCULATING_SUPPLY)
   })
 

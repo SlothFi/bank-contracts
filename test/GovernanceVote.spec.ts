@@ -12,8 +12,8 @@ import { createLpToken } from './shared/lp'
 
 import Bank from '../build/Bank.json'
 import ERC20Mock from '../build/ERC20Mock.json'
-import UniswapV2Factory from '@venomswap/core/build/UniswapV2Factory.json'
-import UniswapV2Pair from '@venomswap/core/build/UniswapV2Pair.json'
+import UniswapV2Factory from '@slothfi/bank-core/build/UniswapV2Factory.json'
+import UniswapV2Pair from '@slothfi/bank-core/build/UniswapV2Pair.json'
 import GovernanceVote from '../build/GovernanceVote.json'
 
 chai.use(solidity)
@@ -63,7 +63,7 @@ describe('GovernanceVote', () => {
     await weth.transfer(alice.address, STARTING_BALANCE)
     wethTokenBalance = expandTo18Decimals(500)
 
-    bank = await deployContract(alice, Bank, ["SlothBank", "xSLOTH", govToken.address])
+    bank = await deployContract(alice, Bank, ["MonBank", "xMON", govToken.address])
 
     banker = await deployMasterBanker(wallets, govToken, expandTo18Decimals(1000), REWARDS_START_BLOCK, HALVING_AFTER_BLOCK_COUNT)
 
@@ -79,8 +79,8 @@ describe('GovernanceVote', () => {
       alice,
       GovernanceVote,
       [
-        "SlothVote",
-        "SlothVote",
+        "MonVote",
+        "MonVote",
         govToken.address,
         bank.address,
         banker.address,
@@ -94,8 +94,8 @@ describe('GovernanceVote', () => {
   })
 
   it('should have correct values for: name, symbol, decimals, govToken, masterBanker, lpPair, bank', async () => {
-    expect(await govVote.name()).to.eq('SlothVote')
-    expect(await govVote.symbol()).to.eq('SlothVote')
+    expect(await govVote.name()).to.eq('MonVote')
+    expect(await govVote.symbol()).to.eq('MonVote')
     expect(await govVote.decimals()).to.eq(18)
     expect(await govVote.govToken()).to.eq(govToken.address)
     expect(await govVote.masterBanker()).to.eq(banker.address)

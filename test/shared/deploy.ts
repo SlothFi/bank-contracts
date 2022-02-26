@@ -4,15 +4,15 @@ import { BigNumberish } from 'ethers/utils'
 
 import { expandTo18Decimals } from './utilities'
 
-import MasterBreeder from '../../build/MasterBreeder.json'
+import MasterBanker from '../../build/MasterBanker.json'
 import GovernanceToken from '../../build/GovernanceToken.json'
 
 const overrides = {
   gasLimit: 9999999
 }
 
-export const TOKEN_NAME = "Sloth"
-export const TOKEN_SYMBOL = "SLOTH"
+export const TOKEN_NAME = "Mon"
+export const TOKEN_SYMBOL = "MON"
 export const TOTAL_CAP = expandTo18Decimals(500000000) // 500m
 export const MANUAL_MINT_LIMIT = expandTo18Decimals(50000) // 50k
 export const LOCK_FROM_BLOCK = 100
@@ -31,7 +31,7 @@ export async function deployGovernanceToken(
   return token
 }
 
-export async function deployMasterBreeder(
+export async function deployMasterBanker(
   wallets: Wallet[],
   token: Contract,
   rewardPerBlock: BigNumberish,
@@ -173,7 +173,7 @@ export async function deployMasterBreeder(
 
   const [alice, bob, carol, minter, dev, liquidityFund, communityFund, founderFund] = wallets
 
-  const contract = await deployContract(alice, MasterBreeder, [
+  const contract = await deployContract(alice, MasterBanker, [
     token.address,
     dev.address,
     liquidityFund.address,
@@ -193,7 +193,7 @@ export async function deployMasterBreeder(
 
   //Init contract
   if (initializeLocks) {
-    await contract.lockUpdate(95) // 95% of rewards will be locked between the Sloth token's _lockFromBlock and _lockToBlock
+    await contract.lockUpdate(95) // 95% of rewards will be locked between the Mon token's _lockFromBlock and _lockToBlock
     await contract.lockcomUpdate(6) // 6% rewards to community rewards pool
     await contract.lockdevUpdate(6) // 6% rewards to dev rewards pool
     await contract.lockfounderUpdate(4) // 4% rewards to founder rewards pool
