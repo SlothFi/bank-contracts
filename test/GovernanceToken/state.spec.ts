@@ -30,14 +30,14 @@ describe('GovernanceToken::State', () => {
 
   let token: Contract
   beforeEach(async () => {
-    token = await deployContract(alice, GovernanceToken, ["Sloth", "SLOTH", TOTAL_CAP, MANUAL_MINT_LIMIT, LOCK_FROM_BLOCK, LOCK_TO_BLOCK])
+    token = await deployContract(alice, GovernanceToken, ["Mon", "MON", TOTAL_CAP, MANUAL_MINT_LIMIT, LOCK_FROM_BLOCK, LOCK_TO_BLOCK])
     await token.mint(alice.address, TOTAL_CIRCULATING_SUPPLY)
   })
 
   it('should have correct values for: name, symbol, decimals, totalSupply, balanceOf', async () => {
     const name = await token.name()
-    expect(name).to.eq('Sloth')
-    expect(await token.symbol()).to.eq('SLOTH')
+    expect(name).to.eq('Mon')
+    expect(await token.symbol()).to.eq('MON')
     expect(await token.decimals()).to.eq(18)
     expect(await token.totalSupply()).to.eq(TOTAL_CIRCULATING_SUPPLY)
     expect(await token.balanceOf(alice.address)).to.eq(TOTAL_CIRCULATING_SUPPLY)

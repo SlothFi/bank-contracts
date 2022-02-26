@@ -262,6 +262,16 @@
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-0.14.0.tgz#9fb3a3cf3132328151f353de4632e01e52102bea"
   integrity sha512-9NET910DNaIPngYnLLPeg+Ogzqsi9uM4mSboU5y6p8S5DzMTVEsJZrawi+BoDNUVBa2DhJqQYUFvMDfgU062LQ==
 
+"@slothfi/bank-core@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@slothfi/bank-core/-/bank-core-1.0.0.tgz#e8782165488f05645be8a55006ee7e1a4b2ca8d7"
+  integrity sha512-gylmpKvgeViFVOpWh7fkYfHgBuis7efnRAWDrm4zvRnCRqD4kjHrbR/bysjDWseRORrSdnlbh3KI99ljEb9vbw==
+
+"@slothfi/bank-lib@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@slothfi/bank-lib/-/bank-lib-1.0.0.tgz#994429a2f82ac486bb4c1c44e6891a9c99e4e6c0"
+  integrity sha512-Wy4NfphnYDdFt5K7xI3WgWyr36k74SpyAx2mbjoaa8417Rq5n2t8Q1nhET92hFVv1sETO8qtEtj2Vdd05MrMwg==
+
 "@solidity-parser/parser@^0.13.2":
   version "0.13.2"
   resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.13.2.tgz#b6c71d8ca0b382d90a7bbed241f9bc110af65cbe"
@@ -339,12 +349,12 @@
   dependencies:
     "@types/node" "*"
 
-"@venomswap/core@1.0.0", "@venomswap/core@^1.0.0":
+"@venomswap/core@1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@venomswap/core/-/core-1.0.0.tgz#f1336702e8ecce6b79b06212220da43a34b3749c"
   integrity sha512-cd4+e5KKH7QmSjMhe50lty35eHuZVTh9YYnkWPdQPe6KG3R5P5JE3LFliwNLpuV4jWEYYRlEa3OaG3ie+BlYrg==
 
-"@venomswap/lib@1.0.0", "@venomswap/lib@^1.0.0":
+"@venomswap/lib@1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@venomswap/lib/-/lib-1.0.0.tgz#8e76f9d2746c8f0a892ba0a28c7ec7d14bec609c"
   integrity sha512-3i0gg+Xlm6n0sy0oJi3SaOd8sARH92vWrdphJMRo7cObR9dp0IvXLcXV2eDxQto0Faa1IB/FOpx/NqgtopiQvA==

@@ -4,7 +4,7 @@ pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-interface IPit {
+interface IBank {
       // IERC20
     function totalSupply() external view returns (uint256);
 
@@ -35,7 +35,7 @@ interface IPit {
         bytes32 s
     ) external;
 
-    // Pit
+    // Bank
     function govToken() external returns (IERC20);
     function enter(uint256 _amount) external;
     function leave(uint256 _share) external;

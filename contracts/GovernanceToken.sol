@@ -118,7 +118,7 @@ contract GovernanceToken is ERC20, Ownable, Authorizable {
         _moveDelegates(_delegates[sender], _delegates[recipient], amount);
     }
 
-    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterBreeder).
+    /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterBanker).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
         _moveDelegates(address(0), _delegates[_to], _amount);

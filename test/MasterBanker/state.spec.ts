@@ -6,13 +6,13 @@ import { BigNumber, bigNumberify, BigNumberish } from 'ethers/utils'
 
 import { expandTo18Decimals } from '../shared/utilities'
 
-import { deployMasterBreeder } from '../shared/deploy'
+import { deployMasterBanker } from '../shared/deploy'
 
 import GovernanceToken from '../../build/GovernanceToken.json'
 
 chai.use(solidity)
 
-describe('MasterBreeder::State', () => {
+describe('MasterBanker::State', () => {
   const provider = new MockProvider({
     hardfork: 'istanbul',
     mnemonic: 'horn horn horn horn horn horn horn horn horn horn horn horn',
@@ -25,7 +25,7 @@ describe('MasterBreeder::State', () => {
   const MANUAL_MINT_LIMIT = expandTo18Decimals(50000) // 50k
 
   let govToken: Contract
-  let breeder: Contract
+  let banker: Contract
 
   context("Ethereum", function () {
     // Original Bao values - used as control variables
@@ -37,22 +37,22 @@ describe('MasterBreeder::State', () => {
     const lockToBlock = 20960714
     
     // This has been modified - contains two more multipliers (104 vs 102) compared to original Bao values.
-    // Multipliers have also been significantly modified to suit SLOTH:s emission model
+    // Multipliers have also been significantly modified to suit MON:s emission model
     const rewardMultipliers = [256,128,64,32,32,16,16,8,8,8,8,8,8,8,8,8,8,8,8,8,8,4,4,4,4,4,4,2,2,2,2,2,1,1,1,1,1,1,2,2,2,2,2,4,4,4,8,8,8,8,8,16,16,16,16,16,16,16,16,16,16,8,8,8,8,8,8,4,4,2,2,1,1,1,1,1,1,2,2,4,4,4,4,8,8,8,8,8,16,16,32,32,32,32,16,8,4,2,1,1,1,1,2,2];
     const halvingAtBlocks: BigNumber[] = []
 
     beforeEach(async () => {
-      govToken = await deployContract(alice, GovernanceToken, ["Sloth", "SLOTH", TOTAL_CAP, MANUAL_MINT_LIMIT, lockFromBlock, lockToBlock])
-      breeder = await deployMasterBreeder(wallets, govToken, expandTo18Decimals(1000), rewardsStartBlock, halvingAfterBlockCount)
-      await govToken.transferOwnership(breeder.address)
+      govToken = await deployContract(alice, GovernanceToken, ["Mon", "MON", TOTAL_CAP, MANUAL_MINT_LIMIT, lockFromBlock, lockToBlock])
+      banker = await deployMasterBanker(wallets, govToken, expandTo18Decimals(1000), rewardsStartBlock, halvingAfterBlockCount)
+      await govToken.transferOwnership(banker.address)
     })
 
     it("should set correct state variables", async function () {
-      const usedGovToken = await breeder.govToken()
-      const devaddr = await breeder.devaddr()
-      const liquidityaddr = await breeder.liquidityaddr()
-      const comfundaddr = await breeder.comfundaddr()
-      const founderaddr = await breeder.founderaddr()
+      const usedGovToken = await banker.govToken()
+      const devaddr = await banker.devaddr()
+      const liquidityaddr = await banker.liquidityaddr()
+      const comfundaddr = await banker.comfundaddr()
+      const founderaddr = await banker.founderaddr()
       const owner = await govToken.owner()
 
       expect(usedGovToken).to.equal(govToken.address)
@@ -60,7 +60,7 @@ describe('MasterBreeder::State', () => {
       expect(liquidityaddr).to.equal(liquidityFund.address)
       expect(comfundaddr).to.equal(communityFund.address)
       expect(founderaddr).to.equal(founderFund.address)
-      expect(owner).to.equal(breeder.address)
+      expect(owner).to.equal(banker.address)
     })
 
     it("should calculate correct values for multipliers, rewards halvings and finish bonus block", async function () {
@@ -71,8 +71,8 @@ describe('MasterBreeder::State', () => {
       expect(rewardMultipliers.length).to.equal(periods)
 
       for (let i = 0; i < rewardMultipliers.length - 1; i++) {
-        expect(await breeder.REWARD_MULTIPLIER(i)).to.equal(rewardMultipliers[i])
-        const halvingBlock = await breeder.HALVING_AT_BLOCK(i)
+        expect(await banker.REWARD_MULTIPLIER(i)).to.equal(rewardMultipliers[i])
+        const halvingBlock = await banker.HALVING_AT_BLOCK(i)
         halvingAtBlocks.push(halvingBlock)
       }
 
@@ -94,18 +94,18 @@ describe('MasterBreeder::State', () => {
 
       const expectedFinishBonusAtBlock = 16092806
       expect(calculatedFinishBonusAtBlock).to.equal(expectedFinishBonusAtBlock)
-      expect(await breeder.FINISH_BONUS_AT_BLOCK()).to.equal(expectedFinishBonusAtBlock)
+      expect(await banker.FINISH_BONUS_AT_BLOCK()).to.equal(expectedFinishBonusAtBlock)
     })
 
     it("should correctly calculate reward multipliers for all halving blocks", async function () {
       this.timeout(0)
       for (let i = 0; i < halvingAtBlocks.length; i++) {
         const halvingAtBlock = halvingAtBlocks[i]
-        expect(await breeder.HALVING_AT_BLOCK(i)).to.equal(halvingAtBlock)
+        expect(await banker.HALVING_AT_BLOCK(i)).to.equal(halvingAtBlock)
 
         const blockBefore = halvingAtBlock.sub(1)
-        const multiplier = await breeder.getMultiplier(blockBefore, halvingAtBlock)
-        expect(await breeder.REWARD_MULTIPLIER(i)).to.equal(multiplier)
+        const multiplier = await banker.getMultiplier(blockBefore, halvingAtBlock)
+        expect(await banker.REWARD_MULTIPLIER(i)).to.equal(multiplier)
         expect(rewardMultipliers[i]).to.equal(multiplier)
       }
     })
@@ -117,17 +117,17 @@ describe('MasterBreeder::State', () => {
       const updatedHalvingAtBlocks = [11511448,11556809,11602170,11647531,11692892,11738253,11783614,11828975,11874336,11919697,11965058,12010419,12055780,12101141,12146502,12191863,12237224,12282585,12327946,12373307,12418668,12464029,12509390,12554751,12600112,12645473,12690834,12736195,12781556,12826917,12872278,12917639,12963000,13008361,13053722,13099083,13144444,13189805,13235166,13280527,13325888,13371249,13416610,13461971,13507332,13552693,13598054,13643415,13688776,13734137,13779498,13824859,13870220,13915581,13960942,14006303,14051664,14097025,14142386,14187747,14233108,14278469,14323830,14369191,14414552,14459913,14505274,14550635,14595996,14641357,14686718,14732079,14777440,14822801,14868162,14913523,14958884,15004245,15049606,15094967,15140328,15185689,15231050,15276411,15321772,15367133,15412494,15457855,15503216,15548577,15593938,15639299,15684660,15730021,15775382,15820743,15866104,15911465,15956826,16002187,16047548,16092909,16138270,16183631]
       const updatedHalvingAfterBlockCount = 45361 // difference between an ensuing value and a previous value in the array above - original halving after block count was 45360
 
-      await breeder.halvingUpdate(updatedHalvingAtBlocks)
+      await banker.halvingUpdate(updatedHalvingAtBlocks)
 
       for (let i = 0; i < updatedHalvingAtBlocks.length; i++) {
         const halvingAtBlock = new BigNumber(updatedHalvingAtBlocks[i])
-        expect(await breeder.HALVING_AT_BLOCK(i)).to.equal(halvingAtBlock)
+        expect(await banker.HALVING_AT_BLOCK(i)).to.equal(halvingAtBlock)
 
         const blockBefore = halvingAtBlock.sub(1)
-        const multiplier = await breeder.getMultiplier(blockBefore, halvingAtBlock)
+        const multiplier = await banker.getMultiplier(blockBefore, halvingAtBlock)
 
         if (i < rewardMultipliers.length) {
-          expect(await breeder.REWARD_MULTIPLIER(i)).to.equal(multiplier)
+          expect(await banker.REWARD_MULTIPLIER(i)).to.equal(multiplier)
           expect(rewardMultipliers[i]).to.equal(multiplier)
         } else {
           expect(multiplier).to.equal(0)
@@ -146,22 +146,22 @@ describe('MasterBreeder::State', () => {
     const lockToBlock = 38538895
     
     // This has been modified - contains two more multipliers (104 vs 102) compared to original Bao values.
-    // Multipliers have also been significantly modified to suit SLOTH:s emission model
+    // Multipliers have also been significantly modified to suit MON:s emission model
     const rewardMultipliers = [256,128,64,32,32,16,16,8,8,8,8,8,8,8,8,8,8,8,8,8,8,4,4,4,4,4,4,2,2,2,2,2,1,1,1,1,1,1,2,2,2,2,2,4,4,4,8,8,8,8,8,16,16,16,16,16,16,16,16,16,16,8,8,8,8,8,8,4,4,2,2,1,1,1,1,1,1,2,2,4,4,4,4,8,8,8,8,8,16,16,32,32,32,32,16,8,4,2,1,1,1,1,2,2]
     const halvingAtBlocks: BigNumber[] = []
 
     beforeEach(async () => {
-      govToken = await deployContract(alice, GovernanceToken, ["Sloth", "SLOTH", TOTAL_CAP, MANUAL_MINT_LIMIT, lockFromBlock, lockToBlock])
-      breeder = await deployMasterBreeder(wallets, govToken, expandTo18Decimals(1000), rewardsStartBlock, halvingAfterBlockCount)
-      await govToken.transferOwnership(breeder.address)
+      govToken = await deployContract(alice, GovernanceToken, ["Mon", "MON", TOTAL_CAP, MANUAL_MINT_LIMIT, lockFromBlock, lockToBlock])
+      banker = await deployMasterBanker(wallets, govToken, expandTo18Decimals(1000), rewardsStartBlock, halvingAfterBlockCount)
+      await govToken.transferOwnership(banker.address)
     })
 
     it("should set correct state variables", async function () {
-      const usedGovToken = await breeder.govToken()
-      const devaddr = await breeder.devaddr()
-      const liquidityaddr = await breeder.liquidityaddr()
-      const comfundaddr = await breeder.comfundaddr()
-      const founderaddr = await breeder.founderaddr()
+      const usedGovToken = await banker.govToken()
+      const devaddr = await banker.devaddr()
+      const liquidityaddr = await banker.liquidityaddr()
+      const comfundaddr = await banker.comfundaddr()
+      const founderaddr = await banker.founderaddr()
       const owner = await govToken.owner()
 
       expect(usedGovToken).to.equal(govToken.address)
@@ -169,7 +169,7 @@ describe('MasterBreeder::State', () => {
       expect(liquidityaddr).to.equal(liquidityFund.address)
       expect(comfundaddr).to.equal(communityFund.address)
       expect(founderaddr).to.equal(founderFund.address)
-      expect(owner).to.equal(breeder.address)
+      expect(owner).to.equal(banker.address)
     })
 
     it("should calculate correct values for multipliers, rewards halvings and finish bonus block", async function () {
@@ -180,8 +180,8 @@ describe('MasterBreeder::State', () => {
       expect(rewardMultipliers.length).to.equal(periods)
 
       for (let i = 0; i < rewardMultipliers.length - 1; i++) {
-        const rewardMultiplier = await breeder.REWARD_MULTIPLIER(i)
-        const halvingBlock = await breeder.HALVING_AT_BLOCK(i)
+        const rewardMultiplier = await banker.REWARD_MULTIPLIER(i)
+        const halvingBlock = await banker.HALVING_AT_BLOCK(i)
         halvingAtBlocks.push(halvingBlock)
 
         expect(rewardMultiplier).to.equal(rewardMultipliers[i])
@@ -206,18 +206,18 @@ describe('MasterBreeder::State', () => {
 
       const expectedFinishBonusAtBlock = 41330671
       expect(calculatedFinishBonusAtBlock).to.equal(expectedFinishBonusAtBlock)
-      expect(await breeder.FINISH_BONUS_AT_BLOCK()).to.equal(expectedFinishBonusAtBlock)
+      expect(await banker.FINISH_BONUS_AT_BLOCK()).to.equal(expectedFinishBonusAtBlock)
     })
 
     it("should correctly calculate reward multipliers for all halving blocks", async function () {
       this.timeout(0)
       for (let i = 0; i < halvingAtBlocks.length; i++) {
         const halvingAtBlock = halvingAtBlocks[i]
-        expect(await breeder.HALVING_AT_BLOCK(i)).to.equal(halvingAtBlock)
+        expect(await banker.HALVING_AT_BLOCK(i)).to.equal(halvingAtBlock)
 
         const blockBefore = halvingAtBlock.sub(1)
-        const multiplier = await breeder.getMultiplier(blockBefore, halvingAtBlock)
-        expect(await breeder.REWARD_MULTIPLIER(i)).to.equal(multiplier)
+        const multiplier = await banker.getMultiplier(blockBefore, halvingAtBlock)
+        expect(await banker.REWARD_MULTIPLIER(i)).to.equal(multiplier)
         expect(rewardMultipliers[i]).to.equal(multiplier)
       }
     })
