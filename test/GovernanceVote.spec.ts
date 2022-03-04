@@ -29,7 +29,7 @@ const MULTIPLIERS = {
   singleStaking: 2
 }
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 
 const debugMessages = false
 
@@ -59,13 +59,19 @@ describe('GovernanceVote', () => {
     await govToken.mint(alice.address, STARTING_BALANCE)
     govTokenBalance = expandTo18Decimals(1000)
 
-    weth = await deployContract(alice, ERC20Mock, ["WETH", "ETH", expandTo18Decimals(10000000)])
+    weth = await deployContract(alice, ERC20Mock, ['WETH', 'ETH', expandTo18Decimals(10000000)])
     await weth.transfer(alice.address, STARTING_BALANCE)
     wethTokenBalance = expandTo18Decimals(500)
 
-    bank = await deployContract(alice, Bank, ["MonBank", "xMON", govToken.address])
+    bank = await deployContract(alice, Bank, ['MonBank', 'xMON', govToken.address])
 
-    banker = await deployMasterBanker(wallets, govToken, expandTo18Decimals(1000), REWARDS_START_BLOCK, HALVING_AFTER_BLOCK_COUNT)
+    banker = await deployMasterBanker(
+      wallets,
+      govToken,
+      expandTo18Decimals(1000),
+      REWARDS_START_BLOCK,
+      HALVING_AFTER_BLOCK_COUNT
+    )
 
     factory = await deployContract(alice, UniswapV2Factory, [alice.address])
     pairFactory = new ContractFactory(UniswapV2Pair.abi, UniswapV2Pair.bytecode, alice)
@@ -73,24 +79,20 @@ describe('GovernanceVote', () => {
     lpPair = await createLpToken(alice, factory, pairFactory, govToken, weth, govTokenBalance, wethTokenBalance)
 
     const token0 = await lpPair.token0()
-    govTokenReservePosition = (token0 === govToken.address) ? 0 : 1
+    govTokenReservePosition = token0 === govToken.address ? 0 : 1
 
-    govVote = await deployContract(
-      alice,
-      GovernanceVote,
-      [
-        "MonVote",
-        "MonVote",
-        govToken.address,
-        bank.address,
-        banker.address,
-        POOL_ID,
-        lpPair.address,
-        govTokenReservePosition,
-        MULTIPLIERS.lpStaking,
-        MULTIPLIERS.singleStaking
-      ]
-    )
+    govVote = await deployContract(alice, GovernanceVote, [
+      'MonVote',
+      'MonVote',
+      govToken.address,
+      bank.address,
+      banker.address,
+      POOL_ID,
+      lpPair.address,
+      govTokenReservePosition,
+      MULTIPLIERS.lpStaking,
+      MULTIPLIERS.singleStaking
+    ])
   })
 
   it('should have correct values for: name, symbol, decimals, govToken, masterBanker, lpPair, bank', async () => {
@@ -109,8 +111,8 @@ describe('GovernanceVote', () => {
 
     const token0 = await lpPair.token0()
     const token1 = await lpPair.token1()
-    const [ reserve0, reserve1 ] = await lpPair.getReserves()
-    
+    const [reserve0, reserve1] = await lpPair.getReserves()
+
     if (debugMessages) {
       console.log(`lpPair -> token0: ${token0} - reserve0: ${utils.formatEther(reserve0.toString())}`)
       console.log(`lpPair -> token1: ${token1} - reserve1: ${utils.formatEther(reserve1.toString())}`)
@@ -151,8 +153,12 @@ describe('GovernanceVote', () => {
 
     const expectedCalculatedGovTokenReserve = govTokenReserve.gt(0) ? govTokenReserve.mul(4) : govTokenReserve
     const expectedBankTotalSupply = bankTotalSupply.gt(0) ? bankTotalSupply.mul(2) : bankTotalSupply
-    const expectedCalculatedGovTokenLockedTotal = govTokenLockedTotal.gt(0) ? govTokenLockedTotal.mul(33).div(100) : govTokenLockedTotal
-    const expectedCalculatedUnlockedTotal = govTokenUnlockedTotal.gt(0) ? govTokenUnlockedTotal.mul(25).div(100) : govTokenUnlockedTotal
+    const expectedCalculatedGovTokenLockedTotal = govTokenLockedTotal.gt(0)
+      ? govTokenLockedTotal.mul(33).div(100)
+      : govTokenLockedTotal
+    const expectedCalculatedUnlockedTotal = govTokenUnlockedTotal.gt(0)
+      ? govTokenUnlockedTotal.mul(25).div(100)
+      : govTokenUnlockedTotal
 
     const expectedCalculatedGovVoteTotalSupply = expectedCalculatedGovTokenReserve
       .add(expectedBankTotalSupply)
@@ -195,8 +201,9 @@ describe('GovernanceVote', () => {
     const govTokenReserve = await govVote.govTokenReserve()
     if (debugMessages) console.log(`govVote -> govTokenReserve: ${utils.formatEther(govTokenReserve.toString())}`)
 
-    const [ userLpTokenAmountInPool ] = await banker.userInfo(POOL_ID, alice.address)
-    if (debugMessages) console.log(`masterBanker -> userInfo(0) -> amount: ${utils.formatEther(userLpTokenAmountInPool.toString())}`)
+    const [userLpTokenAmountInPool] = await banker.userInfo(POOL_ID, alice.address)
+    if (debugMessages)
+      console.log(`masterBanker -> userInfo(0) -> amount: ${utils.formatEther(userLpTokenAmountInPool.toString())}`)
 
     const lpPairTotalSupply = await lpPair.totalSupply()
     if (debugMessages) console.log(`lpPair -> totalSupply: ${utils.formatEther(lpPairTotalSupply.toString())}`)
@@ -205,7 +212,8 @@ describe('GovernanceVote', () => {
     if (debugMessages) console.log(`User share: ${utils.formatEther(userShare.toString())}`)
 
     const pairUnderlying = govTokenReserve.mul(userShare).div(100)
-    if (debugMessages) console.log(`Number of underlying gov tokens in lp pair: ${utils.formatEther(pairUnderlying.toString())}`)
+    if (debugMessages)
+      console.log(`Number of underlying gov tokens in lp pair: ${utils.formatEther(pairUnderlying.toString())}`)
 
     const bankBalance = await bank.balanceOf(alice.address)
     const bankRatio = await govVote.bankRatio()
@@ -225,7 +233,9 @@ describe('GovernanceVote', () => {
     const expectedCalculatedLpPairPower = pairUnderlying.gt(0) ? pairUnderlying.mul(4) : pairUnderlying
     const expectedCalculatedBankPower = bankBalance.gt(0) ? bankBalance.mul(2) : bankBalance
     const expectedCalculatedLockedBalancePower = govTokenLockOf.gt(0) ? govTokenLockOf.mul(33).div(100) : govTokenLockOf
-    const expectedCalculatedBalancePower = currentGovTokenBalance.gt(0) ? currentGovTokenBalance.mul(25).div(100) : currentGovTokenBalance
+    const expectedCalculatedBalancePower = currentGovTokenBalance.gt(0)
+      ? currentGovTokenBalance.mul(25).div(100)
+      : currentGovTokenBalance
 
     // expectedCalculatedLpPairPower =
     //  userShare = (701.803480327648416975 * 100) / 707.1067811865475244
@@ -240,12 +250,11 @@ describe('GovernanceVote', () => {
       .add(expectedCalculatedBankPower)
       .add(expectedCalculatedLockedBalancePower)
       .add(expectedCalculatedBalancePower)
-    
+
     const votingPower = await govVote.balanceOf(alice.address)
-    
+
     if (debugMessages) console.log(`Voting Power: ${utils.formatEther(votingPower.toString())}`)
     expect(votingPower).to.gte(expectedVotingPower)
     expect(votingPower).to.gte(expandTo18Decimals(6460))
   })
-
 })

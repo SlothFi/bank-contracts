@@ -1,6 +1,6 @@
 {
   "name": "@slothfi/bank-contracts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "MIT",
   "description": "Token, Liquidity Mining and Governance contracts for DeFimons Bank",
   "files": [
@@ -39,9 +39,9 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^3.1.0",
-    "@slothfi/bank-core": "^1.0.0",
+    "@slothfi/bank-core": "^1.0.3",
     "@slothfi/bank-lib": "^1.0.0",
-    "@venomswap/periphery": "^1.0.0"
+    "@slothfi/bank-periphery": "^1.0.0"
   },
   "scripts": {
     "lint": "yarn prettier ./test/*.ts --check",
@@ -50,7 +50,7 @@
     "precompile": "yarn clean",
     "compile": "waffle .waffle.json",
     "pretest": "yarn compile",
-    "test": "mocha",
+    "test": "mocha --timeout 1000000",
     "prepublishOnly": "yarn test"
   }
 }
