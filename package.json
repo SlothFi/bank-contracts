@@ -1,6 +1,6 @@
 {
   "name": "@slothfi/bank-contracts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "MIT",
   "description": "Token, Liquidity Mining and Governance contracts for DeFimons Bank",
   "files": [
