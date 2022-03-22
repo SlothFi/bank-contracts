@@ -11,10 +11,10 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "./GovernanceToken.sol";
 import "./Authorizable.sol";
 
-// MasterBanker is the master banker of whatever creature the GovernanceToken represents.
+// MasterBanker is the master banker of whatever pools are available.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once GovernanceToken is sufficiently
+// will be transferred to a governance smart contract once MON is sufficiently
 // distributed and the community can show to govern itself.
 //
 contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
@@ -31,7 +31,8 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         uint256 blockdelta; //time passed since withdrawals
         uint256 lastDepositBlock;
         //
-        // We do some fancy math here. Basically, any point in time, the amount of GovernanceTokens
+        // We do some fancy math here. Basically, at any point in time, the
+        // amount of MON
         // entitled to a user but is pending to be distributed is:
         //
         //   pending reward = (user.amount * pool.accGovTokenPerShare) - user.rewardDebt
@@ -53,12 +54,12 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. GovernanceTokens to distribute per block.
-        uint256 lastRewardBlock; // Last block number that GovernanceTokens distribution occurs.
-        uint256 accGovTokenPerShare; // Accumulated GovernanceTokens per share, times 1e12. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. MON to distribute per block.
+        uint256 lastRewardBlock; // Last block number that MON distribution occurs.
+        uint256 accGovTokenPerShare; // Accumulated MON per share, times 1e12. See below.
     }
 
-    // The Governance token
+    // The MON token
     GovernanceToken public govToken;
     //An ETH/USDC Oracle (Chainlink)
     address public usdOracle;
@@ -70,9 +71,9 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
     address public comfundaddr;
     // Founder Reward
     address public founderaddr;
-    // GovernanceTokens created per block.
+    // MON created per block.
     uint256 public REWARD_PER_BLOCK;
-    // Bonus muliplier for early GovernanceToken makers.
+    // Bonus multiplier for early MON makers.
     uint256[] public REWARD_MULTIPLIER; // init in constructor function
     uint256[] public HALVING_AT_BLOCK; // init in constructor function
     uint256[] public blockDeltaStartStage;
@@ -83,23 +84,23 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
     uint256 public userDepFee;
     uint256 public devDepFee;
 
-    // The block number when GovernanceToken mining starts.
+    // The block number when MON mining starts.
     uint256 public START_BLOCK;
 
-    uint256 public PERCENT_LOCK_BONUS_REWARD; // lock xx% of bounus reward in 3 year
-    uint256 public PERCENT_FOR_DEV; // dev bounties + partnerships
+    uint256[] public PERCENT_LOCK_BONUS_REWARD; // lock xx% of bounus reward
+    uint256 public PERCENT_FOR_DEV; // dev bounties
     uint256 public PERCENT_FOR_LP; // LP fund
     uint256 public PERCENT_FOR_COM; // community fund
     uint256 public PERCENT_FOR_FOUNDERS; // founders fund
 
     // Info of each pool.
     PoolInfo[] public poolInfo;
-    mapping(address => uint256) public poolId1; // poolId1 count from 1, subtraction 1 before using with poolInfo
+    mapping(address => uint256) public poolId1; // poolId1 starting from 1, subtract 1 before using with poolInfo
     // Info of each user that stakes LP tokens. pid => user address => info
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     mapping(address => UserGlobalInfo) public userGlobalInfo;
     mapping(IERC20 => bool) public poolExistence;
-    // Total allocation poitns. Must be the sum of all allocation points in all pools.
+    // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
@@ -167,11 +168,7 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
-    function add(
-        uint256 _allocPoint,
-        IERC20 _lpToken,
-        bool _withUpdate
-    ) public onlyOwner nonDuplicated(_lpToken) {
+    function add(uint256 _allocPoint, IERC20 _lpToken, bool _withUpdate) public onlyOwner nonDuplicated(_lpToken) {
         require(
             poolId1[address(_lpToken)] == 0,
             "MasterBanker::add: lp is already in pool"
@@ -194,12 +191,8 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         );
     }
 
-    // Update the given pool's GovernanceToken allocation point. Can only be called by the owner.
-    function set(
-        uint256 _pid,
-        uint256 _allocPoint,
-        bool _withUpdate
-    ) public onlyOwner {
+    // Update the given pool's MON allocation points. Can only be called by the owner.
+    function set(uint256 _pid, uint256 _allocPoint, bool _withUpdate) public onlyOwner {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -240,6 +233,7 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
             GovTokenForCom,
             GovTokenForFounders
         ) = getPoolReward(pool.lastRewardBlock, block.number, pool.allocPoint);
+        // Mint some new MON tokens for the farmer and store them in MasterBanker.
         govToken.mint(address(this), GovTokenForFarmer);
         pool.accGovTokenPerShare = pool.accGovTokenPerShare.add(
             GovTokenForFarmer.mul(1e12).div(lpSupply)
@@ -247,28 +241,31 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         pool.lastRewardBlock = block.number;
         if (GovTokenForDev > 0) {
             govToken.mint(address(devaddr), GovTokenForDev);
-            //Dev fund has xx% locked during the starting bonus period. After which locked funds drip out linearly each block over 3 years.
+            //Dev fund has xx% locked during the starting bonus period. 
+            //After which locked funds drip out linearly each block over 3 years.
             if (block.number <= FINISH_BONUS_AT_BLOCK) {
                 govToken.lock(address(devaddr), GovTokenForDev.mul(75).div(100));
             }
         }
         if (GovTokenForLP > 0) {
             govToken.mint(liquidityaddr, GovTokenForLP);
-            //LP + Partnership fund has only xx% locked over time as most of it is needed early on for incentives and listings. The locked amount will drip out linearly each block after the bonus period.
+            //LP + Partnership fund has only xx% locked over time as most of it is needed 
+            //early on for incentives and listings. 
+            //The locked amount will drip out linearly each block after the bonus period.
             if (block.number <= FINISH_BONUS_AT_BLOCK) {
                 govToken.lock(address(liquidityaddr), GovTokenForLP.mul(45).div(100));
             }
         }
         if (GovTokenForCom > 0) {
             govToken.mint(comfundaddr, GovTokenForCom);
-            //Community Fund has xx% locked during bonus period and then drips out linearly over 3 years.
+            //Community Fund has xx% locked during bonus period and then drips out linearly.
             if (block.number <= FINISH_BONUS_AT_BLOCK) {
                 govToken.lock(address(comfundaddr), GovTokenForCom.mul(85).div(100));
             }
         }
         if (GovTokenForFounders > 0) {
             govToken.mint(founderaddr, GovTokenForFounders);
-            //The Founders reward has xx% of their funds locked during the bonus period which then drip out linearly per block over 3 years.
+            //The Founders reward has xx% of their funds locked during the bonus period which then drip out linearly.
             if (block.number <= FINISH_BONUS_AT_BLOCK) {
                 govToken.lock(address(founderaddr), GovTokenForFounders.mul(95).div(100));
             }
@@ -278,11 +275,7 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
     // |--------------------------------------|
     // [20, 30, 40, 50, 60, 70, 80, 99999999]
     // Return reward multiplier over the given _from to _to block.
-    function getMultiplier(uint256 _from, uint256 _to)
-        public
-        view
-        returns (uint256)
-    {
+    function getMultiplier(uint256 _from, uint256 _to) public view returns (uint256) {
         uint256 result = 0;
         if (_from < START_BLOCK) return 0;
 
@@ -299,6 +292,22 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
                 uint256 m = endBlock.sub(_from).mul(REWARD_MULTIPLIER[i]);
                 _from = endBlock;
                 result = result.add(m);
+            }
+        }
+
+        return result;
+    }
+
+    function getLockPercentage(uint256 _from, uint256 _to) public view returns (uint256) {
+        uint256 result = 0;
+        if (_from < START_BLOCK) return 100;
+
+        for (uint256 i = 0; i < HALVING_AT_BLOCK.length; i++) {
+            uint256 endBlock = HALVING_AT_BLOCK[i];
+            if (i > PERCENT_LOCK_BONUS_REWARD.length-1) return 0;
+
+            if (_to <= endBlock) {
+                return PERCENT_LOCK_BONUS_REWARD[i];
             }
         }
 
@@ -328,12 +337,16 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         uint256 GovernanceTokenCanMint = govToken.cap().sub(govToken.totalSupply());
 
         if (GovernanceTokenCanMint < amount) {
+            // If there aren't enough governance tokens left to mint before the cap,
+            // just give all of the possible tokens left to the farmer.
             forDev = 0;
             forFarmer = GovernanceTokenCanMint;
             forLP = 0;
             forCom = 0;
             forFounders = 0;
         } else {
+            // Otherwise, give the farmer their full amount and also give some
+            // extra to the dev, LP, com, and founders wallets.
             forDev = amount.mul(PERCENT_FOR_DEV).div(100);
             forFarmer = amount;
             forLP = amount.mul(PERCENT_FOR_LP).div(100);
@@ -342,12 +355,8 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         }
     }
 
-    // View function to see pending GovernanceTokens on frontend.
-    function pendingReward(uint256 _pid, address _user)
-        external
-        view
-        returns (uint256)
-    {
+    // View function to see pending MON on frontend.
+    function pendingReward(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
         uint256 accGovTokenPerShare = pool.accGovTokenPerShare;
@@ -377,16 +386,23 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         _harvest(_pid);
     }
 
-    // lock 95% of reward if it comes from bonus time
+    // lock a % of reward if it comes from bonus time.
     function _harvest(uint256 _pid) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
 
+        // Only harvest if the user amount is greater than 0.
         if (user.amount > 0) {
+            // Calculate the pending reward. This is the user's amount of LP
+            // tokens multiplied by the accGovTokenPerShare of the pool, minus
+            // the user's rewardDebt.
             uint256 pending =
                 user.amount.mul(pool.accGovTokenPerShare).div(1e12).sub(
                     user.rewardDebt
                 );
+
+            // Make sure we aren't giving more tokens than we have in the
+            // MasterBanker contract.
             uint256 masterBal = govToken.balanceOf(address(this));
 
             if (pending > masterBal) {
@@ -394,20 +410,26 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
             }
 
             if (pending > 0) {
+                // If the user has a positive pending balance of tokens, transfer
+                // those tokens from MasterBanker to their wallet.
                 govToken.transfer(msg.sender, pending);
                 uint256 lockAmount = 0;
                 if (user.rewardDebtAtBlock <= FINISH_BONUS_AT_BLOCK) {
-                    lockAmount = pending.mul(PERCENT_LOCK_BONUS_REWARD).div(
-                        100
-                    );
+                    // If we are before the FINISH_BONUS_AT_BLOCK number, we need
+                    // to lock some of those tokens, based on the current lock
+                    // percentage of their tokens they just received.
+                    uint256 lockPercentage = getLockPercentage(block.number - 1, block.number);
+                    lockAmount = pending.mul(lockPercentage).div(100);
                     govToken.lock(msg.sender, lockAmount);
                 }
 
+                // Reset the rewardDebtAtBlock to the current block for the user.
                 user.rewardDebtAtBlock = block.number;
 
                 emit SendGovernanceTokenReward(msg.sender, _pid, pending, lockAmount);
             }
 
+            // Recalculate the rewardDebt for the user.
             user.rewardDebt = user.amount.mul(pool.accGovTokenPerShare).div(1e12);
         }
     }
@@ -427,22 +449,14 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         return current.totalReferals;
     }
 
-    function getRefValueOf(address _user, address _user2)
-        public
-        view
-        returns (uint256)
-    {
+    function getRefValueOf(address _user, address _user2) public view returns (uint256) {
         UserGlobalInfo storage current = userGlobalInfo[_user];
         uint256 a = current.referrals[_user2];
         return a;
     }
 
-    // Deposit LP tokens to MasterBanker for GovernanceToken allocation.
-    function deposit(
-        uint256 _pid,
-        uint256 _amount,
-        address _ref
-    ) public nonReentrant {
+    // Deposit LP tokens to MasterBanker for MON allocation.
+    function deposit(uint256 _pid, uint256 _amount, address _ref) public nonReentrant {
         require(
             _amount > 0,
             "MasterBanker::deposit: amount must be greater than 0"
@@ -467,6 +481,8 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
             current.globalAmount +
             _amount.mul(userDepFee).div(100);
 
+        // When a user deposits, we need to update the pool and harvest beforehand,
+        // since the rates will change.
         updatePool(_pid);
         _harvest(_pid);
         pool.lpToken.safeTransferFrom(
@@ -493,11 +509,7 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
     }
 
     // Withdraw LP tokens from MasterBanker.
-    function withdraw(
-        uint256 _pid,
-        uint256 _amount,
-        address _ref
-    ) public nonReentrant {
+    function withdraw(uint256 _pid, uint256 _amount, address _ref) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         UserGlobalInfo storage refer = userGlobalInfo[_ref];
@@ -627,7 +639,8 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         }
     }
 
-    // Withdraw without caring about rewards. EMERGENCY ONLY. This has the same 25% fee as same block withdrawals to prevent abuse of thisfunction.
+    // Withdraw without caring about rewards. EMERGENCY ONLY.
+    // This has the same 25% fee as same block withdrawals to prevent abuse of thisfunction.
     function emergencyWithdraw(uint256 _pid) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
@@ -689,15 +702,12 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
     }
 
     // Update Rewards Mulitplier Array
-    function rewardMulUpdate(uint256[] memory _newMulReward)
-        public
-        onlyAuthorized
-    {
+    function rewardMulUpdate(uint256[] memory _newMulReward) public onlyAuthorized {
         REWARD_MULTIPLIER = _newMulReward;
     }
 
     // Update % lock for general users
-    function lockUpdate(uint256 _newlock) public onlyAuthorized {
+    function lockUpdate(uint256[] memory _newlock) public onlyAuthorized {
         PERCENT_LOCK_BONUS_REWARD = _newlock;
     }
 
@@ -750,28 +760,17 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         }
     }
 
-    function reviseWithdraw(
-        uint256 _pid,
-        address _user,
-        uint256 _block
-    ) public onlyAuthorized() {
+    function reviseWithdraw(uint256 _pid, address _user, uint256 _block) public onlyAuthorized() {
         UserInfo storage user = userInfo[_pid][_user];
         user.lastWithdrawBlock = _block;
     }
 
-    function reviseDeposit(
-        uint256 _pid,
-        address _user,
-        uint256 _block
-    ) public onlyAuthorized() {
+    function reviseDeposit(uint256 _pid, address _user, uint256 _block) public onlyAuthorized() {
         UserInfo storage user = userInfo[_pid][_user];
         user.firstDepositBlock = _block;
     }
 
-    function setStageStarts(uint256[] memory _blockStarts)
-        public
-        onlyAuthorized()
-    {
+    function setStageStarts(uint256[] memory _blockStarts) public onlyAuthorized() {
         blockDeltaStartStage = _blockStarts;
     }
 
@@ -779,10 +778,7 @@ contract MasterBanker is Ownable, Authorizable, ReentrancyGuard {
         blockDeltaEndStage = _blockEnds;
     }
 
-    function setUserFeeStage(uint256[] memory _userFees)
-        public
-        onlyAuthorized()
-    {
+    function setUserFeeStage(uint256[] memory _userFees) public onlyAuthorized() {
         userFeeStage = _userFees;
     }
 
